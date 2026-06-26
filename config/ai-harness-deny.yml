@@ -1,0 +1,19 @@
+# ai-harness-deny 設定ファイル
+# 配置先: <実行体ディレクトリ>/config/ai-harness-deny.yml
+# 3 系統のいずれかにマッチした PreToolUse を deny する。
+
+# 通常の settings.json で設定するような Tool("引数") 形式のルール。
+#   Bash("...")        … command の前方一致（"git commit" で始まるコマンド）
+#   Read/Edit/Write 等 … file_path の glob 一致（* / ? 使用可）
+rules:
+  - Read("abc.yaml")
+  - Bash("git commit")
+
+# Bash コマンドの deny。rules と違い、指定文字列を「含む」コマンドを全てブロック（部分一致）。
+bash:
+  - "git show"   # git show を含むコマンドはすべてブロック
+
+# ファイルに触ろうとする全ツール（Read/Edit/Write/NotebookEdit 等）をブロック。
+# glob（* / ?）使用可。相対パターンは絶対パスのサフィックスにもマッチする。
+files:
+  - .claude/harness/*
