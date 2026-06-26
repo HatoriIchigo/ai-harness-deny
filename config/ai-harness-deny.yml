@@ -13,7 +13,9 @@ rules:
 bash:
   - "git show"   # git show を含むコマンドはすべてブロック
 
-# ファイルに触ろうとする全ツール（Read/Edit/Write/NotebookEdit 等）をブロック。
-# glob（* / ?）使用可。相対パターンは絶対パスのサフィックスにもマッチする。
+# ファイルに触ろうとする操作をブロック。glob（* / ?）使用可。
+# file_path を引数に取るツール（Read/Edit/Write/NotebookEdit 等）に加え、
+# Bash の command 内にこのパスが現れた場合（tail/cat/cp 等）も deny する。
+# 相対パターンは絶対パスのサフィックスにもマッチする。
 files:
   - .claude/harness/*

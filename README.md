@@ -27,7 +27,7 @@ files:
 |---|---|---|
 | `rules` | `Tool("引数")` で指定したツール | **Bash** … command の**前方一致**（`"git commit"` で始まる）。**ファイル系**（Read/Edit/Write 等）… file_path の **glob 一致**（`*`／`?`） |
 | `bash` | Bash ツールの command | **部分一致**（指定文字列を**含む**コマンドを全て deny） |
-| `files` | file_path を持つ全ツール | file_path の **glob 一致**。相対パターンは絶対パスのサフィックスにもマッチ（`.claude/harness/*` が `/abs/.../.claude/harness/x` に効く） |
+| `files` | パスに触る全操作 | file_path の **glob 一致**（Read/Edit/Write 等）。加えて **Bash の command 内**にパスが現れた場合（`tail`/`cat`/`cp` 等）も deny。相対パターンは絶対パスのサフィックスにもマッチ（`.claude/harness/*` が `/abs/.../.claude/harness/x` に効く） |
 
 - `rules` の `Bash("git commit")` は前方一致のため、`git commit -m x` は deny、`sudo git commit` は許可。
 - `bash` の `"git show"` は部分一致のため、`git show`／`foo && git show HEAD` など含む全コマンドを deny。

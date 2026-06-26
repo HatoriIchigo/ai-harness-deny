@@ -92,17 +92,23 @@ public sealed partial class DenyPlugin : PluginBase
             }
         }
 
-        // --- files: file_path の glob 一致（全ツール対象） ---
-        if (filePath is not null)
+        // --- files: file_path の glob 一致 ---
+        // file_path を引数に取るツール（Read/Edit/Write 等）はもちろん、Bash のように
+        // file_path を持たないツールでも command 内にパスが現れれば塞ぐ
+        // （tail/cat/cp 等のシェル経由アクセスをすり抜けさせない）。
+        foreach (var pattern in ReadList("files"))
         {
-            foreach (var pattern in ReadList("files"))
+            if (filePath is not null && PathMatches(pattern, filePath))
             {
-                if (PathMatches(pattern, filePath))
-                {
-                    yield return LogEntry.Warning($"files で deny: {pattern}");
-                    Deny(result, $"files によりブロック: '{pattern}'（file_path='{filePath}'）");
-                    yield break;
-                }
+                yield return LogEntry.Warning($"files で deny: {pattern}");
+                Deny(result, $"files によりブロック: '{pattern}'（file_path='{filePath}'）");
+                yield break;
+            }
+            if (command is not null && CommandTouchesPath(pattern, command))
+            {
+                yield return LogEntry.Warning($"files で deny (command): {pattern}");
+                Deny(result, $"files によりブロック: '{pattern}'（command='{command}'）");
+                yield break;
             }
         }
 
@@ -172,6 +178,27 @@ public sealed partial class DenyPlugin : PluginBase
                 return true;
             }
             idx = normPath.IndexOf('/', idx + 1);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// シェルコマンドのトークン区切り。空白とシェルメタ文字（パイプ・リダイレクト・クオート・
+    /// 環境変数代入の <c>=</c> 等）で分割し、各トークンを 1 つのパス候補として扱う。
+    /// 厳密なシェルパースではないが、tail/cat/cp 等の引数パスを拾うには十分。
+    /// </summary>
+    private static readonly char[] ShellSeparators =
+        { ' ', '\t', '\n', '\r', '|', '&', ';', '<', '>', '(', ')', '{', '}', '"', '\'', '=', '`' };
+
+    /// <summary>command を区切りでトークン分割し、いずれかのトークンが glob にマッチすれば true。</summary>
+    private static bool CommandTouchesPath(string pattern, string command)
+    {
+        foreach (var token in command.Split(ShellSeparators, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (PathMatches(pattern, token))
+            {
+                return true;
+            }
         }
         return false;
     }
