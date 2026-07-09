@@ -18,6 +18,9 @@ public sealed partial class DenyPlugin : PluginBase
 {
     public override string PluginName => "ai-harness-deny";
 
+    public override string Description =>
+        "rules／bash／files のルールにマッチしたツール実行を deny する";
+
     /// <summary>PreToolUse の全ツールで発火する（イベントマッチ）。</summary>
     public override IReadOnlyList<string> Events => new[] { "PreToolUse" };
 
