@@ -1,0 +1,15 @@
+# ai-harness-deny 設定ファイル（有効化時に自動生成された雛形）。
+# 既定は空＝何も deny しません。必要なルールを追記してください。
+# 3 系統のいずれかにマッチした PreToolUse を deny します。
+
+# Tool("引数") 形式のルール。
+#   Bash("...")        … command の前方一致（例: Bash("git commit")）
+#   Read/Edit/Write 等 … file_path の glob 一致（* / ? 使用可。例: Read("*.env")）
+rules: []
+
+# 指定文字列を「含む」コマンドを部分一致でブロック（Bash 限定。例: "rm -rf"）。
+bash: []
+
+# ファイルに触る操作をブロック。glob（* / ?）使用可（例: .claude/harness/*）。
+# 相対パターンは絶対パスのサフィックスにもマッチします。
+files: []
