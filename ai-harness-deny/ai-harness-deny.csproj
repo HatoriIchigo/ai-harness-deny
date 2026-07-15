@@ -17,4 +17,9 @@
     </ProjectReference>
   </ItemGroup>
 
+  <!-- 各プロジェクトの .claude/rules へ配布する rule 本文。CopyRule が末尾 .rule.md の埋め込みを配置する。 -->
+  <ItemGroup>
+    <EmbeddedResource Include="deny.rule.md" />
+  </ItemGroup>
+
 </Project>

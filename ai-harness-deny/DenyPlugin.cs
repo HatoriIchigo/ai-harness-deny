@@ -27,6 +27,9 @@ public sealed partial class DenyPlugin : PluginBase
     /// <summary>deny ルールを保持する設定ファイル（YAML）。</summary>
     public override string ConfigName => "ai-harness-deny.yml";
 
+    /// <summary>埋め込み rule（<c>deny.rule.md</c>）を各プロジェクトの <c>.claude/rules</c> へ配布する。</summary>
+    public override bool ProvidesRule => true;
+
     public override IEnumerable<LogEntry> Init()
     {
         yield return LogEntry.Info("初期化");
