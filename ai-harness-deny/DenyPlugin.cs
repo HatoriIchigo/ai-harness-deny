@@ -7,12 +7,14 @@ namespace ai_harness_deny;
 
 /// <summary>
 /// Claude からのツール実行を deny するプラグイン。PreToolUse で発火し、設定ファイルの
-/// 3 系統（rules / bash / files）のいずれかにマッチしたら拒否する（deny 先勝ち）。
+/// 4 系統（rules / bash / powershell / files）のいずれかにマッチしたら拒否する（deny 先勝ち）。
 ///
-///   rules … settings.json 風の <c>Tool("引数")</c> ルール。
-///           Bash は command の前方一致、ファイル系ツールは file_path の glob 一致。
-///   bash  … command を部分一致（含めば deny）。Bash ツール限定。
-///   files … file_path を glob 一致（ファイルに触る全ツール対象）。
+///   rules      … settings.json 風の <c>Tool("引数")</c> ルール。
+///                シェル系（Bash／PowerShell）は command の前方一致、
+///                ファイル系ツールは file_path の glob 一致。
+///   bash       … command を部分一致（含めば deny）。Bash ツール限定。
+///   powershell … command を部分一致（含めば deny）。PowerShell ツール限定。
+///   files      … file_path を glob 一致（ファイルに触る全ツール対象）。
 /// </summary>
 public sealed partial class DenyPlugin : PluginBase
 {
@@ -62,9 +64,9 @@ public sealed partial class DenyPlugin : PluginBase
                 continue;
             }
 
-            if (string.Equals(ruleTool, "Bash", StringComparison.Ordinal))
+            if (IsShellTool(ruleTool))
             {
-                // Bash は command の前方一致（settings.json 準拠）。
+                // シェル系（Bash／PowerShell）は command の前方一致（settings.json 準拠）。
                 if (command is not null && command.StartsWith(arg, StringComparison.Ordinal))
                 {
                     yield return LogEntry.Warning($"rules で deny: {raw}");
@@ -84,24 +86,25 @@ public sealed partial class DenyPlugin : PluginBase
             }
         }
 
-        // --- bash: command の部分一致（Bash 限定） ---
-        if (string.Equals(toolName, "Bash", StringComparison.Ordinal) && command is not null)
+        // --- bash / powershell: command の部分一致（該当シェルツール限定） ---
+        var shellKey = ShellConfigKey(toolName);
+        if (shellKey is not null && command is not null)
         {
-            foreach (var needle in ReadList("bash"))
+            foreach (var needle in ReadList(shellKey))
             {
                 if (needle.Length > 0 && command.Contains(needle, StringComparison.Ordinal))
                 {
-                    yield return LogEntry.Warning($"bash で deny: {needle}");
-                    Deny(result, $"bash によりブロック: '{needle}' を含むコマンド（command='{command}'）");
+                    yield return LogEntry.Warning($"{shellKey} で deny: {needle}");
+                    Deny(result, $"{shellKey} によりブロック: '{needle}' を含むコマンド（command='{command}'）");
                     yield break;
                 }
             }
         }
 
         // --- files: file_path の glob 一致 ---
-        // file_path を引数に取るツール（Read/Edit/Write 等）はもちろん、Bash のように
-        // file_path を持たないツールでも command 内にパスが現れれば塞ぐ
-        // （tail/cat/cp 等のシェル経由アクセスをすり抜けさせない）。
+        // file_path を引数に取るツール（Read/Edit/Write 等）はもちろん、Bash／PowerShell の
+        // ように file_path を持たないツールでも command 内にパスが現れれば塞ぐ
+        // （tail/cat/cp／Get-Content/Copy-Item 等のシェル経由アクセスをすり抜けさせない）。
         foreach (var pattern in ReadList("files"))
         {
             if (filePath is not null && PathMatches(pattern, filePath))
@@ -126,6 +129,17 @@ public sealed partial class DenyPlugin : PluginBase
         result.ExitCode = 2;
         result.Reason = reason;
     }
+
+    /// <summary>command を引数に取るシェル系ツール（Bash／PowerShell）か。</summary>
+    private static bool IsShellTool(string? toolName) => ShellConfigKey(toolName) is not null;
+
+    /// <summary>シェル系ツール名 → 部分一致リストの設定キー。シェル系以外は null。</summary>
+    private static string? ShellConfigKey(string? toolName) => toolName switch
+    {
+        "Bash" => "bash",
+        "PowerShell" => "powershell",
+        _ => null,
+    };
 
     /// <summary>設定の指定キー（rules/bash/files）を文字列リストとして取得。未設定は空。</summary>
     private IReadOnlyList<string> ReadList(string key)

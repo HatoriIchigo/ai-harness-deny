@@ -2,7 +2,7 @@
 
 > Claude のツール実行を設定ファイルのルールで deny する ai-harness プラグイン。
 
-`PreToolUse` で発火し、`config/ai-harness-deny.yml` の 3 系統（`rules` / `bash` / `files`）のいずれかにマッチしたツール実行をブロックする（`ExitCode=2`）。マッチしなければ許可。
+`PreToolUse` で発火し、`config/ai-harness-deny.yml` の 4 系統（`rules` / `bash` / `powershell` / `files`）のいずれかにマッチしたツール実行をブロックする（`ExitCode=2`）。マッチしなければ許可。
 
 ## 設定（config/ai-harness-deny.yml）
 
@@ -11,26 +11,33 @@
 rules:
   - Read("abc.yaml")
   - Bash("git commit")
+  - PowerShell("git commit")
 
 # Bash コマンドの部分一致 deny（含めばブロック）
 bash:
   - "git show"
+
+# PowerShell コマンドの部分一致 deny
+powershell:
+  - "Remove-Item"
 
 # ファイルに触る全ツールを glob でブロック
 files:
   - .claude/harness/*
 ```
 
-## 3 系統の挙動
+## 4 系統の挙動
 
 | 系統 | 対象 | マッチ方式 |
 |---|---|---|
-| `rules` | `Tool("引数")` で指定したツール | **Bash** … command の**前方一致**（`"git commit"` で始まる）。**ファイル系**（Read/Edit/Write 等）… file_path の **glob 一致**（`*`／`?`） |
+| `rules` | `Tool("引数")` で指定したツール | **シェル系**（Bash／PowerShell）… command の**前方一致**（`"git commit"` で始まる）。**ファイル系**（Read/Edit/Write 等）… file_path の **glob 一致**（`*`／`?`） |
 | `bash` | Bash ツールの command | **部分一致**（指定文字列を**含む**コマンドを全て deny） |
-| `files` | パスに触る全操作 | file_path の **glob 一致**（Read/Edit/Write 等）。加えて **Bash の command 内**にパスが現れた場合（`tail`/`cat`/`cp` 等）も deny。相対パターンは絶対パスのサフィックスにもマッチ（`.claude/harness/*` が `/abs/.../.claude/harness/x` に効く） |
+| `powershell` | PowerShell ツールの command | `bash` と同じ**部分一致** |
+| `files` | パスに触る全操作 | file_path の **glob 一致**（Read/Edit/Write 等）。加えて **Bash／PowerShell の command 内**にパスが現れた場合（`tail`/`cat`/`cp`、`Get-Content`/`Copy-Item` 等）も deny。相対パターンは絶対パスのサフィックスにもマッチ（`.claude/harness/*` が `/abs/.../.claude/harness/x` に効く） |
 
-- `rules` の `Bash("git commit")` は前方一致のため、`git commit -m x` は deny、`sudo git commit` は許可。
+- `rules` の `Bash("git commit")` は前方一致のため、`git commit -m x` は deny、`sudo git commit` は許可。`PowerShell("…")` も同じ前方一致。
 - `bash` の `"git show"` は部分一致のため、`git show`／`foo && git show HEAD` など含む全コマンドを deny。
+- `bash` と `powershell` はツール別。両方を塞ぐには両方に書く。
 - いずれか 1 つでもマッチすれば deny（先勝ち）。理由は client の stderr へ返る。
 
 ## ビルドと配置

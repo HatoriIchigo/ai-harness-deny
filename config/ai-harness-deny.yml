@@ -1,21 +1,27 @@
 # ai-harness-deny 設定ファイル
 # 配置先: <実行体ディレクトリ>/config/ai-harness-deny.yml
-# 3 系統のいずれかにマッチした PreToolUse を deny する。
+# 4 系統のいずれかにマッチした PreToolUse を deny する。
 
 # 通常の settings.json で設定するような Tool("引数") 形式のルール。
-#   Bash("...")        … command の前方一致（"git commit" で始まるコマンド）
-#   Read/Edit/Write 等 … file_path の glob 一致（* / ? 使用可）
+#   Bash("...")／PowerShell("...") … command の前方一致（"git commit" で始まるコマンド）
+#   Read/Edit/Write 等             … file_path の glob 一致（* / ? 使用可）
 rules:
   - Read("abc.yaml")
   - Bash("git commit")
+  - PowerShell("git commit")
 
 # Bash コマンドの deny。rules と違い、指定文字列を「含む」コマンドを全てブロック（部分一致）。
 bash:
   - "git show"   # git show を含むコマンドはすべてブロック
 
+# PowerShell コマンドの deny。bash と同じ部分一致。
+powershell:
+  - "Remove-Item"   # Remove-Item を含むコマンドはすべてブロック
+
 # ファイルに触ろうとする操作をブロック。glob（* / ?）使用可。
 # file_path を引数に取るツール（Read/Edit/Write/NotebookEdit 等）に加え、
-# Bash の command 内にこのパスが現れた場合（tail/cat/cp 等）も deny する。
+# Bash／PowerShell の command 内にこのパスが現れた場合（tail/cat/cp、
+# Get-Content/Copy-Item 等）も deny する。
 # 相対パターンは絶対パスのサフィックスにもマッチする。
 files:
   - .claude/harness/*
