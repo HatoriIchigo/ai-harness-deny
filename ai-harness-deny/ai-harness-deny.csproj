@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>ai_harness_deny</RootNamespace>
     <AssemblyName>ai-harness-deny</AssemblyName>
+    <Version>0.1.0</Version>
+    <InformationalVersion>0.1.0</InformationalVersion>
     <!-- baselib はホスト(ai-harness-main)が共有ロードするため、出力にコピーしない。 -->
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
@@ -20,7 +22,9 @@
   <!-- 各プロジェクトの .claude/rules へ配布する rule 本文。CopyRule が末尾 .rule.md の埋め込みを配置する。 -->
   <!-- 有効化時に無ければ置くデフォルト設定。CopyDefaultConfig が末尾 .config.yml の埋め込みを配置する。 -->
   <ItemGroup>
-    <EmbeddedResource Include="deny.rule.md" />
+    <EmbeddedResource Include="../resources/rules/deny.rule.md">
+      <LogicalName>rules/deny.rule.md</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="deny.config.yml" />
   </ItemGroup>
 
